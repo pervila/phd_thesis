@@ -1,0 +1,163 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{tssgpub}[2013/02/22 Standard LaTeX package]
+
+\RequirePackage{tocloft}
+\RequirePackage{tikz}
+\RequirePackage{hyphenat}
+\RequirePackage{calc}
+\RequirePackage{totcount}
+\RequirePackage{pdfpages}
+\RequirePackage{xparse}
+
+\DeclareDocumentCommand{\includepaper}{O{0mm} O{1mm} m m}{
+  \cleardoublepage
+  \includepdf[pages=-]{#3}
+}
+% 
+\DeclareOption{excludepapers}{
+  \DeclareDocumentCommand{\includepaper}{O{0mm} O{1mm} m m}{\cleardoublepage}
+}
+% 
+\DeclareOption{cropped}{
+  \DeclareDocumentCommand{\includepaper}{O{0mm} O{1mm} m m}{
+    \cleardoublepage
+    \includepdf[pages=-,frame=false,width=\dimexpr(\textwidth+#1),offset=\dimexpr(1cm-#2) 0cm,keepaspectratio,pagecommand=\thispagestyle{fancy}]{#4}}
+}
+
+\ProcessOptions\relax
+
+\newcommand{\tssgpub@themename}{Appendix}
+\newcommand{\tssgpub@publicationname}{Article}
+\newcommand{\themename}[1]{\renewcommand{\tssgpub@themename}{#1}}
+\newcommand{\publicationname}[1]{\renewcommand{\tssgpub@publicationname}{#1}}
+\newcommand{\listpublicationname}{List of the Author's Publications}
+\newlistof{theme}{pub}{\listpublicationname}
+\newlistentry{publication}{pub}{1}
+\newlistentry{publicationnolink}{pub}{1}
+\newlistentry{contribution}{pub}{2}
+\regtotcounter{publication}
+
+\renewcommand{\thetheme}{\Alph{theme}}
+\renewcommand{\thepublication}{\Roman{publication}}
+\newcommand{\publicationprologue}{}
+
+\newcommand{\listofpublications}{
+  \if@twocolumn
+    \@restonecoltrue\onecolumn
+  \else
+    \@restonecolfalse
+  \fi
+  \cleardoublepage
+  \cftpagenumbersoff{theme}
+  \cftpagenumbersoff{publication}
+  \cftpagenumbersoff{publicationnolink}
+  \cftpagenumbersoff{contribution}
+  \renewcommand{\@tocrmarg}{0em}
+  %\listoftheme 
+  \chapter*{
+  \listpublicationname
+    \markboth{\MakeUppercase\listpublicationname}{\MakeUppercase\listpublicationname}%
+  }
+  \addcontentsline{toc}{chapter}{\listpublicationname}%
+  \publicationprologue
+  \@starttoc{pub}%
+  \if@restonecol\twocolumn\fi
+}
+
+% \renewcommand\cftthemeafterpnum{%
+%   \par\vskip-1ex\hrulefill\par
+% }%
+
+\cftsetindents{publication}{0em}{0em}
+\cftsetindents{publicationnolink}{0em}{0em}
+\cftsetindents{theme}{0em}{0em}
+\cftsetindents{contribution}{1em}{0em}
+\renewcommand{\cftbeforethemeskip}{3em}
+\renewcommand{\cftbeforepublicationskip}{1.5em}
+\renewcommand{\cftbeforepublicationnolinkskip}{1.5em}
+\renewcommand{\cftbeforecontributionskip}{1em}
+\renewcommand{\cftthemefont}{\large\itshape}
+%\renewcommand{\cftpublicationfont}{\normalsize{\bfseries\tssgpub@publicationname:} }
+\setlength{\cftthemenumwidth}{0em}
+\setlength{\cftpublicationnumwidth}{0em}
+
+\newcommand{\currentthemename}[1]{\newcommand{\tssgpub@currentthemename}{#1}}
+\newcommand{\theme}[1]{
+  \refstepcounter{theme}%
+  \let\tssgpub@currentthemename\relax
+  \currentthemename{#1}%
+  %\pagestyle{empty}%
+  \addcontentsline{pub}{theme}{\underline{#1}}\par%
+  \addcontentsline{toc}{chapter}{\protect{\tssgpub@themename~\thetheme: }\relax#1}\par%
+}
+
+\newcommand{\citePublication}[1]{\tssgpub@publicationname~#1}
+\newcommand{\citePublications}[1]{\tssgpub@publicationname{}s~#1}
+\newcommand{\citeTheme}[1]{\tssgpub@themename~#1}
+
+\newlength{\tssgpub@researchPapersSideboxHeight}
+\DeclareDocumentCommand{\publication}{ommmmm}{
+  \IfNoValueT{#1}{
+    \if@openright\cleardoublepage\else\clearpage\fi
+    \thispagestyle{plain}%
+    \refstepcounter{publication}
+    \addcontentsline{toc}{section}{\protect{\tssgpub@publicationname~\thepublication: }\relax#3}\par%
+  }
+  
+  \addtocontents{pub}{\protect\sloppy}
+  \IfNoValueTF{#1}{
+    \addcontentsline{pub}{publication}{\textbf{\tssgpub@publicationname~\thepublication:}~#2, ``#3,'' #4}\par%
+  }{
+    \addcontentsline{pub}{publicationnolink}{\textbf{\tssgpub@publicationname:}~#2, ``#3,'' #4 (#1)}\par%
+  }
+  \addtocontents{pub}{\protect\fussy}
+  \addcontentsline{pub}{contribution}{\textit{Contribution:} #6}\par
+  
+  \IfNoValueT{#1}{
+  
+  \setlength{\tssgpub@researchPapersSideboxHeight}{\paperheight / \totvalue{publication}}
+  \begin{tikzpicture}[remember picture,overlay]
+    \node [shift={(-\marginparwidth/2 - \marginparpush/2,
+    -\tssgpub@researchPapersSideboxHeight/2-\value{publication}*\tssgpub@researchPapersSideboxHeight + \tssgpub@researchPapersSideboxHeight)},
+    fill=black,text=white,minimum width=(\marginparwidth + \marginparpush), 
+    minimum height=\tssgpub@researchPapersSideboxHeight]  at (current page.north east) {\Huge \bf \Roman{publication}};
+  \end{tikzpicture}
+
+  {
+  \noindent \Large \itshape \tssgpub@themename~\thetheme: \sloppy \nohyphens{\tssgpub@currentthemename}\par
+  }
+  \vspace*{50pt}
+  {
+    \noindent \Huge \bfseries \tssgpub@publicationname~\thepublication\par
+    \vskip 40pt
+  }
+  {
+    \noindent \sloppy \nohyphens{#2}\par
+    \vskip 20pt
+  }
+  {
+    \noindent \bfseries \sloppy \nohyphens{#3}\par
+    \vskip 20pt
+  }
+  {
+    \noindent #4\par
+    \vskip 20pt
+  }
+  {
+    \noindent #5\par
+  }
+  \vspace{\fill}
+   {
+    \textit{Contribution:} #6\par
+  }  
+  \markboth{\MakeUppercase\tssgpub@themename~\thetheme. \tssgpub@publicationname~\thepublication}
+  {\MakeUppercase\tssgpub@themename~\thetheme. \tssgpub@publicationname~\thepublication}
+  }
+}
+
+\newcommand{\setcontributionoff}{\setcounter{pubdepth}{2}}
+\newcommand{\setcontributionon}{\setcounter{pubdepth}{3}}
+\setcontributionon
+
+\newcommand{\copyrightIEEE}[1]{Copyright \copyright\hspace{2pt} #1 IEEE. Reprinted with permission}
+\newcommand{\copyrightACM}[1]{Copyright \copyright\hspace{2pt} #1 by the Association for Computing Machinery, Inc. Reprinted with permission}
